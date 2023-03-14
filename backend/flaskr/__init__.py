@@ -38,12 +38,53 @@ def create_app(test_config=None):
     #         update the frontend to handle additional books in the styling and pagination
     #         Response body keys: 'success', 'books' and 'total_books'
     # TEST: When completed, the webpage will display books including title, author, and rating shown as stars
+    @app.route('/books')
+    def get_books():
+        books_query = Book.query.all()
+        books= [book.format() for book in books_query]
+
+        page = request.args.get('page', 1, type=int)
+        start = (page - 1) * BOOKS_PER_SHELF
+        end = start + BOOKS_PER_SHELF
+
+        if end > len(books):
+            abort(404)
+        else:
+            return jsonify({
+                'success':True,
+                'books': books[start:end],
+                'total_books' : len(books)
+            })
 
     # @TODO: Write a route that will update a single book's rating.
     #         It should only be able to update the rating, not the entire representation
     #         and should follow API design principles regarding method and route.
     #         Response body keys: 'success'
     # TEST: When completed, you will be able to click on stars to update a book's rating and it will persist after refresh
+    @app.route('/books/<int:book_id>', methods=['PATCH'])
+    def update_book_startrating(book_id):
+        body = request.get_json() # Get the information that must be updated
+        print(body)
+        try:
+            book = Book.query.get(book_id)
+
+            if book is None:
+                abort(404)
+            
+            if 'rating' in body:
+                book.rating = int(body.get('rating'))
+
+            book.update()
+
+            return jsonify({
+                'success':True,
+                'id': book.id
+            })
+        except Exception as e:
+            abort(400)
+
+        
+
 
     # @TODO: Write a route that will delete a single book.
     #        Response body keys: 'success', 'deleted'(id of deleted book), 'books' and 'total_books'
